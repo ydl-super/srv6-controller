@@ -12,23 +12,23 @@ def close_ssh_session(session):
   remoteCmd.cache.flush()
 
 # Let's create a new route
-cmd = "ip -6 route add 1111:4::2/128 encap seg6 mode inline segs 1111:3::2 dev eth0"
-remoteCmd = SSHCommand(cmd, "127.0.0.1", 220, "srv6", "srv6")
+cmd = "ip -6 route add 1111:4::2/128 encap seg6 mode inline segs 1111:3::2 dev ens192"
+remoteCmd = SSHCommand(cmd, "127.0.0.1", 220, "my", "123456")
 remoteCmd.run()
 
 # Let's create a bunch of routes
-cmd = "ip -6 route add 2222:4::2/128 encap seg6 mode inline segs 2222:3::2 dev eth0; \
-ip -6 route add 3333:4::2/128 encap seg6 mode encap segs 3333:3::2,3333:2::2,3333:3::1 dev eth0"
-remoteCmd = SSHCommand(cmd, "127.0.0.1", 220, "srv6", "srv6")
+cmd = "ip -6 route add 2222:4::2/128 encap seg6 mode inline segs 2222:3::2 dev ens192; \
+ip -6 route add 3333:4::2/128 encap seg6 mode encap segs 3333:3::2,3333:2::2,3333:3::1 dev ens192"
+remoteCmd = SSHCommand(cmd, "127.0.0.1", 220, "my", "123456")
 remoteCmd.run()
 # Close the session
 close_ssh_session(remoteCmd)
 # Now delete all the routes created before
-cmds = ["ip -6 route del 1111:4::2/128 dev eth0", "ip -6 route del 2222:4::2/128 dev eth0",
-"ip -6 route del 3333:4::2/128 dev eth0"]
+cmds = ["ip -6 route del 1111:4::2/128 dev ens192", "ip -6 route del 2222:4::2/128 dev ens192",
+"ip -6 route del 3333:4::2/128 dev ens192"]
 # Iterate over the commands
 for cmd in cmds:
   # Each time creating a new session
-  remoteCmd = SSHCommand(cmd, "127.0.0.1", 220, "srv6", "srv6")
+  remoteCmd = SSHCommand(cmd, "127.0.0.1", 220, "my", "123456")
   remoteCmd.run()
   close_ssh_session(remoteCmd)

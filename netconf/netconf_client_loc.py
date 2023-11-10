@@ -38,16 +38,14 @@ config = """
 <test-option>test-then-set</test-option>
 <error-option>rollback-on-error</error-option>
 <config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <srv6-explicit-path operation="create" xmlns="urn:ietf:params:xml:ns:yang:srv6-explicit-path">
-      <path>
+  <srv6-localsid operation="create" xmlns="urn:ietf:params:xml:ns:yang:srv6-localsid">
+      <localsid>
           <destination>1111:4::2/128</destination>
-          <sr-path>
-              <srv6-segment>1111:3::2</srv6-segment>
-          </sr-path>
-          <encapmode>inline</encapmode>
-          <device>eth0</device>
-      </path>
-    </srv6-explicit-path>
+          <action>End.DX4</action>
+          <nexthop>10.0.1.2</nexthop>
+          <device>ens192</device>
+      </localsid>
+    </srv6-localsid>
 </config>
 </edit-config>
 """
@@ -65,26 +63,20 @@ config = """
 <test-option>test-then-set</test-option>
 <error-option>rollback-on-error</error-option>
 <config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <srv6-explicit-path operation="create" xmlns="urn:ietf:params:xml:ns:yang:srv6-explicit-path">
-      <path>
+  <srv6-localsid operation="create" xmlns="urn:ietf:params:xml:ns:yang:srv6-localsid">
+      <localsid>
           <destination>2222:4::2/128</destination>
-          <sr-path>
-              <srv6-segment>2222:3::2</srv6-segment>
-          </sr-path>
-          <encapmode>inline</encapmode>
-          <device>eth0</device>
-      </path>
-      <path>
+          <action>End.DX4</action>
+          <nexthop>10.0.1.3</nexthop>
+          <device>ens192</device>
+      </localsid>
+      <localsid>
           <destination>3333:4::2/128</destination>
-          <sr-path>
-              <srv6-segment>3333:3::2</srv6-segment>
-              <srv6-segment>3333:2::2</srv6-segment>
-              <srv6-segment>3333:1::2</srv6-segment>
-          </sr-path>
-          <encapmode>encap</encapmode>
-          <device>eth0</device>
-      </path>
-    </srv6-explicit-path>
+          <action>End.DX4</action>
+          <nexthop>10.0.1.4</nexthop>
+          <device>ens192</device>
+      </localsid>
+    </srv6-localsid>
 </config>
 </edit-config>
 """

@@ -37,7 +37,7 @@ from optparse import OptionParser
 # Folder of the dump
 TOPO_FOLDER = "topo_extraction"
 # In our experiment we use srv6 as default password
-PASSWD = "srv6"
+PASSWD = "123456"
 
 def topology_information_extraction(opts):
 	
@@ -75,12 +75,12 @@ def topology_information_extraction(opts):
 		G = nx.Graph()
 
 		for router, port in zip(routers, ports):
-			print "\n********* Connecting to %s-%s *********" %(router, port)
+			print("\n********* Connecting to %s-%s *********" %(router, port))
 			password = PASSWD
 			try:
 				tn = telnetlib.Telnet(router, port) # Init telnet
 			except socket.error:
-				print "Error: cannot establish a connection to " + str(router) + " on port " + str(port) + "\n"
+				print("Error: cannot establish a connection to " + str(router) + " on port " + str(port) + "\n")
 				break
 
 			if password:
@@ -99,7 +99,7 @@ def topology_information_extraction(opts):
 			try:
 				tn = telnetlib.Telnet(router, port) # Init telnet
 			except socket.error:
-				print "Error: cannot establish a connection to " + str(router) + " on port " + str(port) + "\n"
+				print("Error: cannot establish a connection to " + str(router) + " on port " + str(port) + "\n")
 				break
 
 			if password:
@@ -187,7 +187,7 @@ def topology_information_extraction(opts):
 				transit_networks[net] = stub_networks[net]
 				stub_networks.pop(net)
 			elif len(stub_networks[net]) > 2:
-				print "Error: inconsistent network list"
+				print("Error: inconsistent network list")
 				exit(-1)
 
 		# Build edges list
@@ -209,11 +209,11 @@ def topology_information_extraction(opts):
 
 
 		# Print results
-		print "Stub Networks:", stub_networks.keys()
-		print "Transit Networks:", transit_networks.keys()
-		print "Nodes:", nodes
-		print "Edges:", edges
-		print "***************************************"
+		print("Stub Networks:", stub_networks.keys())
+		print("Transit Networks:", transit_networks.keys())
+		print("Nodes:", nodes)
+		print("Edges:", edges)
+		print("***************************************")
 
 		# Build NetworkX Topology
 		for r in nodes:

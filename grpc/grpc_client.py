@@ -40,7 +40,7 @@ srv6_segment = path.sr_path.add()
 srv6_segment.segment = "1111:3::2"
 # Single add
 response = srv6_stub.Create(path_request)
-print response
+print(response)
 
 path_request = srv6_explicit_path_pb2.SRv6EPRequest()
 path = path_request.path.add()
@@ -61,7 +61,7 @@ srv6_segment = path.sr_path.add()
 srv6_segment.segment = "3333:1::2"
 # Bulk add
 response = srv6_stub.Create(path_request)
-print response
+print(response)
 # Let's close the session
 channel.close()
 
@@ -123,5 +123,5 @@ for data in json_data:
       srv6_segment = path.sr_path.add()
       srv6_segment.segment = segment
     response = srv6_stub.Remove(path_request)
-    print response
+    print(response)
     channel.close()

@@ -7,7 +7,7 @@ import logging
 import time
 import json
 import paramiko
-import SocketServer
+import socketserver
 import traceback
 import threading
 import subprocess
@@ -21,8 +21,8 @@ ssh_server = None
 logger = logging.getLogger(__name__)
 # Server port, user and password
 SSH_PORT = 220
-SSH_USER = 'srv6'
-SSH_PASSWORD = 'srv6'
+SSH_USER = 'my'
+SSH_PASSWORD = '123456'
 SSH_IP = '0.0.0.0'
 # Debug option
 SERVER_DEBUG = False
@@ -40,8 +40,8 @@ class SSHKeyHandler(object):
   def parse_host_key(self):
     # Read defined host key and parses it
     if self.host_key:
-      assert os.path.exists(host_key)
-      self.host_key = paramiko.RSAKey.from_private_key_file(host_key)
+      assert os.path.exists(self.host_key)
+      self.host_key = paramiko.RSAKey.from_private_key_file(self.host_key)
     else:
       for keypath in [ "/etc/ssh/ssh_host_rsa_key",
                         "/etc/ssh/ssh_host_dsa_key"]:
@@ -74,8 +74,10 @@ class SSHRequestHandler(paramiko.ServerInterface):
   def check_channel_exec_request(self, channel, command):
     logger.debug("Cmd received:%s", command)
     exit_status = 0
+    print(command)
     # Let's parse the command and then executes it
-    commands = command.split(";")
+    str_command = str(command, encoding='utf-8')
+    commands = str_command.split(";")
     # It could be a sequence of commands chained with ';'
     for command in commands:
       exit_status =  exit_status + subprocess.call(command, shell=True)
@@ -85,7 +87,7 @@ class SSHRequestHandler(paramiko.ServerInterface):
     self.event.set()
     return True
 
-class TransportRequestHandler(SocketServer.StreamRequestHandler):
+class TransportRequestHandler(socketserver.StreamRequestHandler):
   """ Implements transport request handler """
 
   def handle(self):
@@ -133,7 +135,7 @@ def start_server():
   if ssh_server is not None:
     logger.error("SSH Server is already up and running")
   else:
-    ssh_server = SocketServer.ThreadingTCPServer((SSH_IP, SSH_PORT),
+    ssh_server = socketserver.ThreadingTCPServer((SSH_IP, SSH_PORT),
       TransportRequestHandler)
     ssh_server.key_handler = SSHKeyHandler()
   # Start the loop for SSH

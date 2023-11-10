@@ -41,7 +41,10 @@ OP = {
   "remove":"del",
   "destination":"dst",
   "device":"dev",
-  "encapmode":"encapmode",
+  "action":"action",
+  "nexthop":"nexthop",
+  "table":"table",
+  "vrftable":"vrftable",
   "segments":"segs"
 }
 
@@ -69,33 +72,42 @@ class YangUtils:
   """
 
   @staticmethod
-  def get_srv6_p(netconf_path):
+  def get_srv6_loc(netconf_localsid):
     # Init steps
-    path = {}
+    localsid = {}
     # Get srv6 path
-    for elem in netconf_path:
+    for elem in netconf_localsid:
       tag = YangUtils.remove_urn(elem.tag)
       # Get destination
       if tag == "destination":
-        path[OP[tag]] = elem.text
+        localsid[OP[tag]] = elem.text
+      # Get action
+      if tag == "action":
+        localsid[OP["action"]] = elem.text
+      # Get nexthop
+      if tag == "nexthop":
+        localsid[OP[tag]] = elem.text
+      # Get nexthop
+      if tag == "table":
+        localsid[OP[tag]] = elem.text
+      # Get nexthop
+      if tag == "vrftable":
+        localsid[OP[tag]] = elem.text
       # Get segments
       if tag == "sr-path":
         segments = []
         for subelm in elem:
           # Get segments
           if YangUtils.remove_urn(subelm.tag) == "srv6-segment":
-            segments.append(subelm.text)
-        path[OP["segments"]] = segments
-      # Get encap mode
-      if tag == "encapmode":
-        path[OP[tag]] = elem.text
+              segments.append(subelm.text)
+        localsid[OP["segments"]] = segments
       # Get destination
       if tag == "device":
-        path[OP[tag]] = elem.text
-    return path
+        localsid[OP[tag]] = elem.text
+    return localsid
 
   @staticmethod
-  def get_srv6_ep_op(netconf_data):
+  def get_srv6_ls_op(netconf_data):
     # Get operation from srv6-explicit-path
     for attrib in netconf_data.attrib:
       if YangUtils.remove_urn(attrib) == "operation":
@@ -104,27 +116,28 @@ class YangUtils:
     raise Exception("No operation found in netconf data")
 
   @staticmethod
-  def is_srv6_ep(rpc):
+  def is_srv6_loc(rpc):
     #Locate object
-    netconf_data = rpc.find("edit-config/nc:config/srv6:srv6-explicit-path/", NS)
-    return netconf_data is not  None
+    netconf_data = rpc.find("edit-config/nc:config/srv6:srv6-localsid/", NS)
+    logger.info(netconf_data)
+    return netconf_data is not None
 
   @staticmethod
-  def get_srv6_ep(rpc):
+  def get_srv6_ls(rpc):
     # Init steps
     msg = {}
     netconf_data = rpc.find("edit-config/nc:config/", NS)
     logger.info(netconf_data)
-   # Get operation type
-    op_type = OP[YangUtils.get_srv6_ep_op(netconf_data)]
+    # Get operation type
+    op_type = OP[YangUtils.get_srv6_ls_op(netconf_data)]
     # Let's parse paths
-    paths = []
-    netconf_paths = list(netconf_data)
-    for netconf_path in netconf_paths:
-      paths.append(YangUtils.get_srv6_p(netconf_path))
+    localsids = []
+    netconf_localsids = list(netconf_data)
+    for netconf_localsid in netconf_localsids:
+      localsids.append(YangUtils.get_srv6_loc(netconf_localsid))
     # Finally let's fill the python dict
     msg['operation'] = op_type
-    msg['paths'] = paths
+    msg['localsids'] = localsids
     return msg
 
 # Netconf methods definition
@@ -133,7 +146,7 @@ class SRv6NetconfMethods(server.NetconfMethods):
 
   def nc_append_capabilities(self, capabilities_answered):
 
-    capability_list = ["urn:ietf:params:xml:ns:yang:srv6-explicit-path"]
+    capability_list = ["urn:ietf:params:xml:ns:yang:srv6-localsid"]
 
     for cap in capability_list:
       elem = etree.Element("capability")
@@ -143,45 +156,35 @@ class SRv6NetconfMethods(server.NetconfMethods):
 
   def rpc_edit_config(self, unused_session, rpc, *unused_params):
         logger.debug("rpc_edit_config")
-        logger.debug(rpc)
         logger.debug("RPC received:%s", format(etree.tostring(rpc, pretty_print=True)))
         # srv6-explicit-path Yang model
-        if YangUtils.is_srv6_ep(rpc):
-          srv6_config = YangUtils.get_srv6_ep(rpc)
-          """
-          {
-            "operation": "add",
-            "paths": [
-              {
-                "dev": "eth0",
-                "dst": "2222:4::2/128",
-                "encapmode": "inline",
-                "segs": [
-                  "2222:3::2"
-                ]
-              },
-              {
-                "dev": "eth0",
-                "dst": "3333:4::2/128",
-                "encapmode": "encap",
-                "segs": [
-                  "3333:3::2",
-                  "3333:2::2",
-                  "3333:1::2"
-                ]
-              }
-            ]
-          }
-          """
+        if YangUtils.is_srv6_loc(rpc):
+          srv6_config = YangUtils.get_srv6_ls(rpc)
           logger.debug("config received:\n%s", json.dumps(srv6_config, indent=2, sort_keys=True))
           # Let's push the routes
-          for path in srv6_config["paths"]:
-            ip_route.route(srv6_config["operation"], dst=path['dst'], oif=idxs[path['dev']],
-              encap={'type':'seg6', 'mode':path['encapmode'], 'segs':path['segs']})
+          for localsid in srv6_config["localsids"]:
+            if localsid['action'] == "End.DX4":
+              ip_route.route(srv6_config["operation"], dst=localsid['dst'], oif=idxs[localsid['dev']],
+                encap={'type':'seg6local', 'action':localsid['action'], 'nh4':localsid['nexthop']})
+            if localsid['action'] == "End.DX6":
+              ip_route.route(srv6_config["operation"], dst=localsid['dst'], oif=idxs[localsid['dev']],
+                encap={'type':'seg6local', 'action':localsid['action'], 'nh6':localsid['nexthop']})
+            if localsid['action'] == "End.DT4" or localsid['action'] == "End.DT46":
+              ip_route.route(srv6_config["operation"], dst=localsid['dst'], oif=idxs[localsid['dev']],
+                encap={'type':'seg6local', 'action':localsid['action'], 'vrf_table':localsid['vrftable']})
+            if localsid['action'] == "End.DT6":
+              if localsid['table'] != None:
+                ip_route.route(srv6_config["operation"], dst=localsid['dst'], oif=idxs[localsid['dev']],
+                  encap={'type':'seg6local', 'action':localsid['action'], 'table':localsid['table']})
+              if localsid['vrftable'] != None:
+                ip_route.route(srv6_config["operation"], dst=localsid['dst'], oif=idxs[localsid['dev']],
+                  encap={'type':'seg6local', 'action':localsid['action'], 'vrf_table':localsid['vrftable']})
+            if localsid['action'] == "End.B6" or localsid['action'] == "End.B6.Encap":
+              ip_route.route(srv6_config["operation"], dst=localsid['dst'], oif=idxs[localsid['dev']],
+                encap={'type':'seg6local', 'action':localsid['action']},srh={'segs':localsid['segs']})
           return etree.Element("ok")
         logger.info("not supported yet")
         return etree.Element("not-supported")
-
 # Start Netconf server
 def start_server():
   # Configure Netconf server listener and ip route
